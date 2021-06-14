@@ -22,33 +22,35 @@ def UpdateZones():
 	zone_info = cf.zones.get(params={'name': config['domain']['name']})[0]
 	zone_id = zone_info['id']
 	body=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"\nDNS记录做出以下修改:\ndel\n"
-	#删除记录
-	for subdomain in config['domain']['zone']:
-		if(subdomain=="@"):
-			domain=config['domain']['name']
-		else:
-			domain=subdomain+"."+config['domain']['name']
-		dns_records = cf.zones.dns_records.get(zone_id, params={'name':domain})
-		for dns_record in dns_records:
-			#只删除 AAAA A CNAME 记录类型
-			if(dns_record['type'] in ['AAAA','A','CNAME']):
-				if(CheckIp(dns_record['content'])==100):
-					body=body+("type [%s] | name [%s] | content [%s]" % (dns_record['type'],dns_record['name'],dns_record['content']))+"\n"
-					dns_record_id = dns_record['id']
-					r = cf.zones.dns_records.delete(zone_id, dns_record_id)
-					body=body+"add\n"
-					#添加记录
-					for dns_record in config['records']:
-						if(CheckIp(dns_record['content'])!=100):
-							body=body+("type [%s] | name [%s] | content [%s]" % (dns_record['type'],dns_record['name'],dns_record['content']))+"\n"
-							r = cf.zones.dns_records.post(zone_id, data=dns_record)
-							if(dns_record['type']=="CNAME"):
-								break
-					if(body.count("type")>0):
-						sendmail(body)
+	#如果自己的网络通再检查
+	if(CheckIp("223.5.5.5") != 100):
+		#删除记录
+		for subdomain in config['domain']['zone']:
+			if(subdomain=="@"):
+				domain=config['domain']['name']
+			else:
+				domain=subdomain+"."+config['domain']['name']
+			dns_records = cf.zones.dns_records.get(zone_id, params={'name':domain})
+			for dns_record in dns_records:
+				#只删除 AAAA A CNAME 记录类型
+				if(dns_record['type'] in ['AAAA','A','CNAME']):
+					if(CheckIp(dns_record['content'])==100):
+						body=body+("type [%s] | name [%s] | content [%s]" % (dns_record['type'],dns_record['name'],dns_record['content']))+"\n"
+						dns_record_id = dns_record['id']
+						r = cf.zones.dns_records.delete(zone_id, dns_record_id)
+						body=body+"add\n"
+						#添加记录
+						for dns_record in config['records']:
+							if(CheckIp(dns_record['content'])!=100):
+								body=body+("type [%s] | name [%s] | content [%s]" % (dns_record['type'],dns_record['name'],dns_record['content']))+"\n"
+								r = cf.zones.dns_records.post(zone_id, data=dns_record)
+								if(dns_record['type']=="CNAME"):
+									break
+						if(body.count("type")>0):
+							sendmail(body)
 
 def SurvivalScan(ip):
-	r=requests.get('http://'+url,timeout=10).status_code
+	r=requests.get('http://'+ip,timeout=15).status_code
 	return r
 '''
 @description: 利用PING检测IP存活
@@ -58,7 +60,7 @@ def SurvivalScan(ip):
 def CheckIp(ip):
 	plat=sys.platform
 	if (plat=="linux"):
-		x=os.popen("ping %s -c 3" %(ip,))
+		x=os.popen("ping %s -c 5" %(ip,))
 		ping = x.read()
 		x.close()
 		return int(ping.split("%")[0].split(",")[-1].strip())
