@@ -128,15 +128,15 @@ def SurvivalScan(url, ip, domain, times=3):
 		time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 		print("health check domian: " + domain + ' h:' + res.hostname + " url:"+ urlRaw)
 		try:
-			code = requests.get(urlRaw,timeout=15,headers={'Host': res.hostname}).status_code
+			code = requests.get(urlRaw,timeout=5,headers={'Host': res.hostname}).status_code
 			print("response code: "+ str(code))
-			if(code == 200 or code == 400):
-				return True
+			if(code != 200 and code != 400):
+				return False
 			time.sleep(3)
 		except Exception as e:
-			print("url 测试失败：",e)
-			continue
-	return False
+			print("url test fail：",e)
+			return False
+	return True
 
 '''
 @description: 利用PING检测IP存活
