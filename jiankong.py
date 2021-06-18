@@ -5,6 +5,7 @@
 # @Email:   yumusb@foxmail.com
 # @Last Modified by:   fishg
 # @Last Modified time: 2021-06-16
+from typing import List
 from requests.api import delete
 import CloudFlare
 import requests
@@ -103,6 +104,12 @@ def UpdateZones(config):
 					sendmail(body)
 			#如果有删除dns，就记录下
 			if(len(deletedRecord) > 0):
+				#合并本次删除的记录和以往没有恢复的记录
+				if(delIndex > -1):
+					a = deletedHistoryYaml["deletedRecord"]
+					if(a is not None):
+						b = deletedRecord + a
+						deletedRecord = list(set(b))
 				with open(subdomain + "_deleted.yml", "w") as yaml_file:
 					yaml_obj = {"deletedRecord":deletedRecord}
 					yaml.dump(yaml_obj, yaml_file)
