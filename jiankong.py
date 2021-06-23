@@ -159,13 +159,13 @@ def CheckIp(ip):
 	else:
 		exit()
 def sendmail(body):
-	global config
-	mail_host=config['SMTP']['host']  #设置服务器
-	mail_user=config['SMTP']['user']    #用户名
-	mail_pass=config['SMTP']['pass']   #口令 
+	global configs
+	mail_host=configs['SMTP']['host']  #设置服务器
+	mail_user=configs['SMTP']['user']    #用户名
+	mail_pass=configs['SMTP']['pass']   #口令 
 
 	sender = mail_user
-	receivers = config['SMTP']['receivers']
+	receivers = configs['SMTP']['receivers']
 	message = MIMEText(body, 'plain', 'utf-8')
 	message['From'] = sender
 	message['To'] = receivers
