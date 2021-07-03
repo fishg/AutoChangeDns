@@ -87,7 +87,7 @@ def UpdateZones(config):
 			if(len(dns_records) - len(deletedRecord) < 1):
 				#添加记录
 				for dns_record in config['records']:
-					if(dns_record['type'] == 'A' and dns_record['name'] !=  domain):
+					if(dns_record['name'] !=  domain):
 						continue
 					body=body+"add backup\n"
 					if(SurvivalScan(httpcheckURL,dns_record['content'],domain)):
