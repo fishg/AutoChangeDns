@@ -1,27 +1,35 @@
+SelfTestIP: 223.5.5.5
 CloudFlare:
-  mail: yumusb@foxmail.com
-  token: 
+  mail: xxx@gmail.com
+  token: xxx
 SMTP:
   #SMTP服务器
-  host: 
+  host: smtp.qq.com
   #密码
-  pass: 
+  pass: xxxxx
   #接受者
-  receivers: 
+  receivers: xxxxx@qq.com
   #用户
-  user: 
+  user: xxxxx@qq.com
 #将要监控的域名记录
-domain:
-  name: 09.nu
-  zone:
-  - '@'
-#主用加备用记录 都写在这里
-records:
-- content: yumusb.coding.me 
-  name: '@'
-  type: CNAME
-  proxied: false
-- content: yumusb.github.io
-  name: '@'
-  type: CNAME
-  proxied: false
+domains:
+  domain:
+    name: xxx.com
+    zone:
+      'xxx0.m': 'http://tj.baidu.com:31800'
+      'xxx1.xian': 'http://tj.baidu.com:23193'
+      'xxx2.xian': 'http://tj.baidu.com:23202'
+    #备用记录 都写在这里
+    records:
+    - content: 113.2.2.2
+      name: 'xxx0.com'
+      type: A
+      proxied: false
+    - content: 113.2.2.3
+      name: 'xxx1.com'
+      type: A
+      proxied: false
+    - content: 113.2.2.2
+      name: 'xxx2.com'
+      type: A
+      proxied: false
