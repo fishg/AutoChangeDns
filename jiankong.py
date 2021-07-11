@@ -100,8 +100,6 @@ def UpdateZones(config):
 							continue
 						if(dns_record['type']=="CNAME"):
 							break
-			if(body.count("type")>0):
-					sendmail(body)
 			#如果有删除dns，就记录下
 			if(len(deletedRecord) > 0):
 				#合并本次删除的记录和以往没有恢复的记录
@@ -113,6 +111,8 @@ def UpdateZones(config):
 				with open(subdomain + "_deleted.yml", "w") as yaml_file:
 					yaml_obj = {"deletedRecord":deletedRecord}
 					yaml.dump(yaml_obj, yaml_file)
+			if(body.count("type")>0):
+					sendmail(body)
 
 '''
 @description: 使用http检查是否正常
@@ -172,14 +172,16 @@ def sendmail(body):
 	subject = 'DNS记录更换'
 	message['Subject'] = Header(subject, 'utf-8')
 	try:
-	    smtpObj = smtplib.SMTP() 
-	    smtpObj.connect(mail_host, 25)    # 25 为 SMTP 端口号
-	    smtpObj.login(mail_user,mail_pass)  
-	    smtpObj.sendmail(sender, receivers, message.as_string())
-	    print("send Mail Success")
-	    return True
+		smtpObj = smtplib.SMTP_SSL(mail_host, 587, timeout=30) 
+		# smtpObj.connect(mail_host, 25)    # 25 为 SMTP 端口号
+		smtpObj.starttls()
+		smtpObj.login(mail_user,mail_pass)  
+		smtpObj.sendmail(sender, receivers, message.as_string())
+		smtpObj.close()
+		print("send Mail Success")
+		return True
 	except smtplib.SMTPException:
-	    return False
+		return False
 def main():
 	while True:
 		print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))

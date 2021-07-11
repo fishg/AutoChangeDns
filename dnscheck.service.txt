@@ -1,0 +1,18 @@
+[Unit]
+Description=DNS Check
+After=network-online.target
+Wants=network-online.target systemd-networkd-wait-online.service
+
+[Service]
+Environment=PYTHONUNBUFFERED=1
+Type=simple
+Restart=always
+RestartSec=5
+User=root
+DynamicUser=true
+ExecStart=/usr/bin/python3 /root/dns/jiankong.py
+LimitNOFILE=1048576
+LimitNPROC=51200
+
+[Install]
+WantedBy=multi-user.target
