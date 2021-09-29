@@ -204,7 +204,7 @@ def main():
 			    UpdateZones(configs['domains'][config])
 		except Exception as e:
 			traceback.print_exc()
-		time.sleep(300)
+		time.sleep(120)
 		
 if __name__ == '__main__':
 	main()
