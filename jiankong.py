@@ -17,7 +17,6 @@ from email.mime.text import MIMEText
 from email.header import Header
 from urllib.parse import urlparse
 import yaml
-from pprint import pprint
 import traceback
 
 os.chdir(sys.path[0])
@@ -69,15 +68,30 @@ def UpdateZones(config):
 				delIndex = delIndex + 1
 				print("检查是否能从之前的ip恢复: "+ historyRecodIP)
 				body=body+"add\n"
-				if(SurvivalScan(httpcheckURL,historyRecodIP,domain)):
+				if(SurvivalScan(httpcheckURL,historyRecodIP,domain,10)):
 					print("恢复ip: "+ historyRecodIP)
 					del deletedHistoryYaml["deletedRecord"][delIndex]
 					dns_record = {"content": historyRecodIP, "name": dnsName, "type": dnsType,"proxied":False}
 					body=body+("type [%s] | name [%s] | content [%s]" % (dns_record['type'],dns_record['name'],dns_record['content']))+"\n"
 					try:
-					    r = cf.zones.dns_records.post(zone_id, data=dns_record)
+						#恢复ip
+						r = cf.zones.dns_records.post(zone_id, data=dns_record)
+						#删除兜底ip
+						for dns_record_backup in config['records']:
+							if(dns_record_backup['name'] !=  domain):
+								continue
+							for dns_record in dns_records:
+								#只删除 AAAA A CNAME 记录类型
+								if(dns_record['type'] in ['AAAA','A','CNAME']):
+									if dns_record_backup['content'] == dns_record['content']:
+										print("删除兜底ip: "+ dns_record['content'])
+										dns_record_id = dns_record['id']
+										try:
+											r = cf.zones.dns_records.delete(zone_id, dns_record_id)
+										except Exception as e:
+											print("删除兜底ip失败：",e)
 					except Exception as e:
-					    print("恢复ip失败：",e)
+						print("恢复ip失败：",e)
 					if(dns_record['type']=="CNAME"):
 						break
 			if(delIndex > -1):
@@ -124,7 +138,7 @@ def UpdateZones(config):
 def SurvivalScan(url, ip, domain, times=3):
 	for i in range(0,times) :
 		res=urlparse(url)
-		urlRaw = 'http://'+ip+':'+ str(res.port)
+		urlRaw = res._replace(netloc=ip+':'+ str(res.port)).geturl()
 		time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 		print("health check domian: " + domain + ' h:' + res.hostname + " url:"+ urlRaw)
 		try:
@@ -172,9 +186,9 @@ def sendmail(body):
 	subject = 'DNS记录更换'
 	message['Subject'] = Header(subject, 'utf-8')
 	try:
-		smtpObj = smtplib.SMTP_SSL(mail_host, 587, timeout=30) 
+		smtpObj = smtplib.SMTP_SSL(mail_host, 465, timeout=30) 
 		# smtpObj.connect(mail_host, 25)    # 25 为 SMTP 端口号
-		smtpObj.starttls()
+		# smtpObj.starttls()
 		smtpObj.login(mail_user,mail_pass)  
 		smtpObj.sendmail(sender, receivers, message.as_string())
 		smtpObj.close()
