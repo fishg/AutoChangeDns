@@ -28,7 +28,7 @@ def UpdateZones(config):
 	cf = CloudFlare.CloudFlare(email=configs['CloudFlare']['mail'], token=configs['CloudFlare']['token'])
 	zone_info = cf.zones.get(params={'name': config['name']})[0]
 	zone_id = zone_info['id']
-	body=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"\nDNS记录做出以下修改:\ndel\n"
+	body=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"\nDNS记录做出以下修改:\n"
 	deletedHistory=[]
 	#如果自己的网络通再检查
 	if(CheckIp(configs['SelfTestIP']) != 100):
@@ -58,7 +58,7 @@ def UpdateZones(config):
 					dnsName = dns_record['name']
 					if(not SurvivalScan(httpcheckURL,dns_record['content'],domain)):
 						print("删除ip: "+ dns_record["content"])
-						body=body+("type [%s] | name [%s] | content [%s]" % (dns_record['type'],dns_record['name'],dns_record['content']))+"\n"
+						body=body+("del\ntype [%s] | name [%s] | content [%s]" % (dns_record['type'],dns_record['name'],dns_record['content']))+"\n"
 						dns_record_id = dns_record['id']
 						deletedRecord.append(dns_record['content'])
 						r = cf.zones.dns_records.delete(zone_id, dns_record_id)
@@ -87,7 +87,8 @@ def UpdateZones(config):
 										print("删除兜底ip: "+ dns_record['content'])
 										dns_record_id = dns_record['id']
 										try:
-											r = cf.zones.dns_records.delete(zone_id, dns_record_id)
+                                                                                        r = cf.zones.dns_records.delete(zone_id, dns_record_id)
+                                                                                        body=body+"删除兜底ip: " + dns_record['content'] + "\n"
 										except Exception as e:
 											print("删除兜底ip失败：",e)
 					except Exception as e:
@@ -106,7 +107,7 @@ def UpdateZones(config):
 					body=body+"add backup\n"
 					if(SurvivalScan(httpcheckURL,dns_record['content'],domain)):
 						print("添加备用ip: "+ dns_record["content"])
-						body=body+("type [%s] | name [%s] | content [%s]" % (dns_record['type'],dns_record['name'],dns_record['content']))+"\n"
+						body=body+("add backup ip:\ntype [%s] | name [%s] | content [%s]" % (dns_record['type'],dns_record['name'],dns_record['content']))+"\n"
 						try:
 							r = cf.zones.dns_records.post(zone_id, data=dns_record)
 						except Exception as e:
@@ -135,14 +136,14 @@ def UpdateZones(config):
 @param int 检查测试
 @return: 响应码是否为200
 '''
-def SurvivalScan(url, ip, domain, times=3):
+def SurvivalScan(url, ip, domain, times=1):
 	for i in range(0,times) :
 		res=urlparse(url)
 		urlRaw = res._replace(netloc=ip+':'+ str(res.port)).geturl()
 		time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 		print("health check domian: " + domain + ' h:' + res.hostname + " url:"+ urlRaw)
 		try:
-			code = requests.get(urlRaw,timeout=5,headers={'Host': res.hostname}).status_code
+			code = requests.get(urlRaw,timeout=10,headers={'Host': res.hostname}).status_code
 			print("response code: "+ str(code))
 			if(code != 200 and code != 400):
 				return False
@@ -208,5 +209,6 @@ def main():
 		
 if __name__ == '__main__':
 	main()
+
 
 
