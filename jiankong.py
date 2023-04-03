@@ -93,7 +93,8 @@ def UpdateZones(config):
                             for dns_record in dns_records:
                                 # 只删除 AAAA A CNAME 记录类型
                                 if(dns_record['type'] in ['AAAA', 'A', 'CNAME']):
-                                    if dns_record_backup['content'] == dns_record['content']:
+                                    ip = getIP(dns_record_backup['content'])
+                                    if ip == dns_record['content']:
                                         # continue
                                         print("删除兜底ip: " +
                                               dns_record['content'])
@@ -119,15 +120,18 @@ def UpdateZones(config):
                     if(dns_record['name'] != domain):
                         continue
                     body = body+"add backup\n"
-                    if(SurvivalScan(httpcheckURL, dns_record['content'], domain, 1, 'http')):
-                        print("添加备用ip: " + dns_record["content"])
-                        body = body+("add backup ip:\ntype [%s] | name [%s] | content [%s]" % (
-                            dns_record['type'], dns_record['name'], dns_record['content']))+"\n"
+                    ip = getIP(dns_record['content'])
+                    if(SurvivalScan(httpcheckURL, ip, domain, 1, 'http')):
+                        print("添加备用ip: " + ip)
+                        body = body+("add backup ip:\ntype [%s] | name [%s] | content [%s]<->[%s]" % (
+                            dns_record['type'], dns_record['name'], dns_record['content']),ip)+"\n"
+                        #domain to ip
+                        dns_record['content'] = ip
                         try:
                             r = cf.zones.dns_records.post(
                                 zone_id, data=dns_record)
                         except Exception as e:
-                            print("添加失败："+dns_record['content'] + " ", e)
+                            print("添加失败："+ip + " ", e)
                             continue
                         if(dns_record['type'] == "CNAME"):
                             break
@@ -230,6 +234,10 @@ def sendmail(body):
         return True
     except smtplib.SMTPException:
         return False
+
+def getIP(domain):
+    myaddr = socket.getaddrinfo(domain, 'http')
+    print(myaddr[0][4][0])
 
 
 def main():
