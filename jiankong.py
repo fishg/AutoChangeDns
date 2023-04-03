@@ -21,6 +21,7 @@ import yaml
 import traceback
 
 os.chdir(sys.path[0])
+rootpath="/tmp"
 
 with open('config.yml')as f:
     configs = yaml.load(f, Loader=yaml.SafeLoader)
@@ -41,8 +42,8 @@ def UpdateZones(config):
         for subdomain in config['zone']:
             deletedHistory.clear()
             httpcheckURL = config['zone'][subdomain]
-            if os.path.exists(subdomain + '_deleted.yml'):
-                with open(subdomain + '_deleted.yml')as f:
+            if os.path.exists(rootpath+'/'+subdomain + '_deleted.yml'):
+                with open(rootpath+'/'+subdomain + '_deleted.yml')as f:
                     deletedHistoryYaml = yaml.load(f, Loader=yaml.SafeLoader)
                     if(deletedHistoryYaml is not None and deletedHistoryYaml["deletedRecord"] is not None and len(deletedHistoryYaml["deletedRecord"]) > 0):
                         deletedHistory = deletedHistoryYaml["deletedRecord"]
@@ -62,7 +63,7 @@ def UpdateZones(config):
                 if(dns_record['type'] in ['A', 'CNAME']):
                     dnsType = dns_record['type']
                     dnsName = dns_record['name']
-                    if(not SurvivalScan(httpcheckURL, dns_record['content'], domain, 2, 'tcp')):
+                    if(not SurvivalScan(httpcheckURL, dns_record['content'], domain, 2, 'http')):
                         print("删除ip: " + dns_record["content"])
                         body = body+("del\ntype [%s] | name [%s] | content [%s]" % (
                             dns_record['type'], dns_record['name'], dns_record['content']))+"\n"
@@ -75,7 +76,7 @@ def UpdateZones(config):
                 delIndex = delIndex + 1
                 print("检查是否能从之前的ip恢复: " + historyRecodIP)
                 body = body+"add\n"
-                if(SurvivalScan(httpcheckURL, historyRecodIP, domain, 10, 'tcp')):
+                if(SurvivalScan(httpcheckURL, historyRecodIP, domain, 10, 'http')):
                     print("恢复ip: " + historyRecodIP)
                     del deletedHistoryYaml["deletedRecord"][delIndex]
                     dns_record = {"content": historyRecodIP,
@@ -93,6 +94,7 @@ def UpdateZones(config):
                                 # 只删除 AAAA A CNAME 记录类型
                                 if(dns_record['type'] in ['AAAA', 'A', 'CNAME']):
                                     if dns_record_backup['content'] == dns_record['content']:
+                                        # continue
                                         print("删除兜底ip: " +
                                               dns_record['content'])
                                         dns_record_id = dns_record['id']
@@ -108,7 +110,7 @@ def UpdateZones(config):
                     if(dns_record['type'] == "CNAME"):
                         break
             if(delIndex > -1):
-                with open(subdomain + "_deleted.yml", "w") as yaml_file:
+                with open(rootpath+'/'+subdomain + "_deleted.yml", "w") as yaml_file:
                     yaml.dump(deletedHistoryYaml, yaml_file)
             # 如果dns都删除完了，就把备用的顶上
             if(len(dns_records) - len(deletedRecord) < 1):
@@ -117,7 +119,7 @@ def UpdateZones(config):
                     if(dns_record['name'] != domain):
                         continue
                     body = body+"add backup\n"
-                    if(SurvivalScan(httpcheckURL, dns_record['content'], domain, 1, 'tcp')):
+                    if(SurvivalScan(httpcheckURL, dns_record['content'], domain, 1, 'http')):
                         print("添加备用ip: " + dns_record["content"])
                         body = body+("add backup ip:\ntype [%s] | name [%s] | content [%s]" % (
                             dns_record['type'], dns_record['name'], dns_record['content']))+"\n"
@@ -137,7 +139,7 @@ def UpdateZones(config):
                     if(a is not None):
                         b = deletedRecord + a
                         deletedRecord = list(set(b))
-                with open(subdomain + "_deleted.yml", "w") as yaml_file:
+                with open(rootpath+'/'+subdomain + "_deleted.yml", "w") as yaml_file:
                     yaml_obj = {"deletedRecord": deletedRecord}
                     yaml.dump(yaml_obj, yaml_file)
             if(body.count("type") > 0):
@@ -167,7 +169,7 @@ def SurvivalScan(url, ip, domain, times=1, method='http'):
                 print("response code: " + str(code))
                 if(code != 200 and code != 400):
                     return False
-                time.sleep(3)
+                return True
             except Exception as e:
                 print("url test fail：", e)
                 return False
@@ -176,8 +178,8 @@ def SurvivalScan(url, ip, domain, times=1, method='http'):
                 socket.create_connection((ip, res.port), 7).close()
                 return True
             except:
-                return False
-    return True
+                continue
+    return False
 
 
 '''
