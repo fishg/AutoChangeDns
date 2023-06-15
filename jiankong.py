@@ -124,7 +124,7 @@ def UpdateZones(config):
                     if(SurvivalScan(httpcheckURL, ip, domain, 1, 'http')):
                         print("添加备用ip: " + ip)
                         body = body+("add backup ip:\ntype [%s] | name [%s] | content [%s]<->[%s]" % (
-                            dns_record['type'], dns_record['name'], dns_record['content']),ip)+"\n"
+                            dns_record['type'], dns_record['name'], dns_record['content'],ip))+"\n"
                         #domain to ip
                         dns_record['content'] = ip
                         try:
@@ -237,8 +237,9 @@ def sendmail(body):
 
 def getIP(domain):
     myaddr = socket.getaddrinfo(domain, 'http')
+    print("get ip by domain: " + domain)
     print(myaddr[0][4][0])
-
+    return myaddr[0][4][0]
 
 def main():
     while True:
